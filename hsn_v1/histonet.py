@@ -5,6 +5,7 @@ from keras.models import model_from_json
 from keras import optimizers
 import scipy
 from scipy import io
+from .adp import Atlas
 
 class HistoNet:
     """Class for implementing the classification CNN stage (HistoNet)"""
@@ -22,7 +23,7 @@ class HistoNet:
         self.input_name = params['input_name']
         self.class_names = params['class_names']
 
-    def build_model(self):
+    def build_model(self, pretrained=True):
         """Load model architecture, weights from file and compile the model"""
 
         # Load architecture from json
@@ -32,9 +33,11 @@ class HistoNet:
         json_file.close()
         self.model = model_from_json(loaded_model_json)
 
-        # Load weights from h5
-        model_h5_path = os.path.join(self.model_dir, self.model_name + '.h5')
-        self.model.load_weights(model_h5_path)
+        if pretrained:
+            # Load weights from h5
+            print('Loading pretrained weights')
+            model_h5_path = os.path.join(self.model_dir, self.model_name + '.h5')
+            self.model.load_weights(model_h5_path)
 
         # Evaluate model
         opt = optimizers.SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
@@ -62,6 +65,15 @@ class HistoNet:
         # Zero-mean, unit-variance normalization
         Y = (X - self.train_mean) / (self.train_std + 1e-7)
         return Y
+
+    def train_glas(self, X, y):
+        # Define valid classes and colours
+        self.httclass_valid_classes = []
+        self.httclass_valid_colours = []
+        self.httclass_valid_classes.append(self.atlas.glas_valid_classes)
+        self.httclass_valid_colours.append(self.atlas.glas_valid_colours)
+
+
 
     def load_thresholds(self, thresh_dir, model_name):
         """Load confidence score thresholds from file

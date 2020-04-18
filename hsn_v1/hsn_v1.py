@@ -15,6 +15,7 @@ from .utilities import *
 from .histonet import HistoNet
 from .gradcam import GradCAM
 from .densecrf import DenseCRF
+from tqdm import tqdm
 
 OVERLAY_R = 0.75
 
@@ -208,7 +209,7 @@ class HistoSegNetV1:
                 else:
                     self.httclass_loginvfreq.append(np.load(httweights_path))
 
-    def load_histonet(self, params):
+    def load_histonet(self, params, pretrained=True):
         """Load classification CNN (HistoNet) as first stage of HistoSegNet"""
 
         # Save user-defined settings
@@ -230,7 +231,7 @@ class HistoSegNetV1:
         self.hn = HistoNet(params={'model_dir': self.data_dir, 'model_name': self.model_name,
                                    'batch_size': self.batch_size, 'relevant_inds': self.atlas.level3_valid_inds,
                                    'input_name': self.input_name, 'class_names': self.atlas.level5})
-        self.hn.build_model()
+        self.hn.build_model(pretrained)
 
         # Load HistoNet HTT score thresholds
         self.hn.load_thresholds(self.data_dir, self.model_name)
@@ -241,7 +242,7 @@ class HistoSegNetV1:
         """Run HistoSegNet in batch mode"""
 
         num_batches = (len(self.input_files_all) + self.batch_size - 1) // self.batch_size
-        for iter_batch in range(num_batches):
+        for iter_batch in tqdm(range(num_batches)):
             if self.verbosity == 'NORMAL':
                 print('\tBatch #' + str(iter_batch + 1) + ' of ' + str(num_batches))
                 batch_start_time = time.time()
@@ -683,6 +684,7 @@ class HistoSegNetV1:
         httclass_iou = []
         httclass_fiou = []
         httclass_miou = []
+        httclass_dice = []
         for iter_httclass in range(len(self.httclass_gt_segmasks)):
             colours = self.httclass_valid_colours[iter_httclass]
             loginvfreq = self.httclass_loginvfreq[iter_httclass]
@@ -733,6 +735,13 @@ class HistoSegNetV1:
                         dpi=96, format='png', bbox_inches='tight')
             plt.close()
 
+            # Eval dice index
+            # dice_index = self.get_dice(confusion_mat[0])
+            dice_index = self.get_mean_dice(confusion_mat[0])
+            httclass_dice.append(dice_index)
+            dice_name = self.htt_classes[iter_httclass] + '_dice'
+            items.append((dice_name, [dice_index]))
+
             # Plot the confusion matrix for foreground classes only
             title = "Confusion matrix\n"
             xlabel = 'Prediction'
@@ -754,4 +763,15 @@ class HistoSegNetV1:
         res = pd.DataFrame.from_dict(dict(items))
         res.to_csv(metric_path)
 
-        return httclass_iou, httclass_fiou, httclass_miou
+        return httclass_iou, httclass_fiou, httclass_miou, httclass_dice
+
+    # def get_dice(self, conf_mat):
+    #     return 2 * conf_mat[0][0] / (2*conf_mat[0][0] + conf_mat[1][0] + conf_mat[0][1])
+
+    def get_dice(self, conf_mat):
+        dice = (2 * np.diag(conf_mat) + 1e-8) / (np.sum(conf_mat, axis=1) + np.sum(conf_mat, axis=0) + 1e-8)
+        return dice
+
+    def get_mean_dice(self, conf_mat):
+        dice = self.get_dice(conf_mat)
+        return np.nanmean(dice)

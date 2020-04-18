@@ -6,3 +6,7 @@ img
 gt
 data
 tmp
+
+*.pyc
+hsn_v1/__pycache__/*
+hsn_data.zip
