@@ -3,6 +3,7 @@ import hsn_v1
 if __name__ == '__main__':
     # User-defined Settings
     MODEL_NAME = 'histonet_X1.7_clrdecay_5'
+    # MODEL_NAME = 'histonet_glas'
     INPUT_NAME = '02_glas_full'
     INPUT_MODE = 'patch'                    # {'patch', 'wsi'}
     INPUT_SIZE = [224, 224]                 # [<int>, <int>] > 0

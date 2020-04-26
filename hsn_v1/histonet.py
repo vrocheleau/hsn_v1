@@ -35,7 +35,7 @@ class HistoNet:
 
         if pretrained:
             # Load weights from h5
-            print('Loading pretrained weights')
+            print('Loading pretrained weights : {}'.format(self.model_name))
             model_h5_path = os.path.join(self.model_dir, self.model_name + '.h5')
             self.model.load_weights(model_h5_path)
 

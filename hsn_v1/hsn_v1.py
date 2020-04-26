@@ -219,10 +219,10 @@ class HistoSegNetV1:
         model_threshold_path = os.path.join(self.data_dir, self.model_name + '.mat')
         model_json_path = os.path.join(self.data_dir, self.model_name + '.json')
         model_h5_path = os.path.join(self.data_dir, self.model_name + '.h5')
-        if not os.path.exists(model_threshold_path) or not os.path.exists(model_json_path) or not \
-                os.path.exists(model_h5_path):
-            raise Exception('The files corresopnding to user-defined model ' + self.model_name + ' do not exist in ' +
-                            self.data_dir)
+        # if not os.path.exists(model_threshold_path) or not os.path.exists(model_json_path) or not \
+        #         os.path.exists(model_h5_path):
+        #     raise Exception('The files corresopnding to user-defined model ' + self.model_name + ' do not exist in ' +
+        #                     self.data_dir)
 
         if self.verbosity == 'NORMAL':
             print('Loading HistoNet', end='')
@@ -684,7 +684,9 @@ class HistoSegNetV1:
         httclass_iou = []
         httclass_fiou = []
         httclass_miou = []
+        httclass_mean_dice = []
         httclass_dice = []
+
         for iter_httclass in range(len(self.httclass_gt_segmasks)):
             colours = self.httclass_valid_colours[iter_httclass]
             loginvfreq = self.httclass_loginvfreq[iter_httclass]
@@ -735,9 +737,14 @@ class HistoSegNetV1:
                         dpi=96, format='png', bbox_inches='tight')
             plt.close()
 
+            # Eval mean dice index
+            mean_dice_index = self.get_mean_dice(confusion_mat[0])
+            httclass_mean_dice.append(mean_dice_index)
+            mdice_name = self.htt_classes[iter_httclass] + '_mdice'
+            items.append((mdice_name, [mean_dice_index]))
+
             # Eval dice index
-            # dice_index = self.get_dice(confusion_mat[0])
-            dice_index = self.get_mean_dice(confusion_mat[0])
+            dice_index = self.get_dice(confusion_mat[0])
             httclass_dice.append(dice_index)
             dice_name = self.htt_classes[iter_httclass] + '_dice'
             items.append((dice_name, [dice_index]))
@@ -763,7 +770,7 @@ class HistoSegNetV1:
         res = pd.DataFrame.from_dict(dict(items))
         res.to_csv(metric_path)
 
-        return httclass_iou, httclass_fiou, httclass_miou, httclass_dice
+        return httclass_iou, httclass_fiou, httclass_miou, httclass_dice, httclass_mean_dice
 
     # def get_dice(self, conf_mat):
     #     return 2 * conf_mat[0][0] / (2*conf_mat[0][0] + conf_mat[1][0] + conf_mat[0][1])
