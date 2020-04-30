@@ -1,8 +1,8 @@
 import os
 import keras
 import numpy as np
-from keras.models import model_from_json
-from keras import optimizers
+from tensorflow.keras.models import model_from_json
+from tensorflow.keras import optimizers
 import scipy
 from scipy import io
 from .adp import Atlas
